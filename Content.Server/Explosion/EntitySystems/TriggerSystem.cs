@@ -1,10 +1,10 @@
 using Content.Server.Administration.Logs;
 using Content.Server.Body.Systems;
-using Content.Server.Chemistry.Containers.EntitySystems;
 using Content.Server.Explosion.Components;
 using Content.Server.Flash;
 using Content.Server.Electrocution;
 using Content.Server.Pinpointer;
+using Content.Shared.Chemistry.EntitySystems;
 using Content.Shared.Flash.Components;
 using Content.Server.Radio.EntitySystems;
 using Content.Shared.Chemistry.Components;
@@ -75,7 +75,7 @@ namespace Content.Server.Explosion.EntitySystems
         [Dependency] private readonly RadioSystem _radioSystem = default!;
         [Dependency] private readonly IRobustRandom _random = default!;
         [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
-        [Dependency] private readonly SolutionContainerSystem _solutionContainerSystem = default!;
+        [Dependency] private readonly SharedSolutionContainerSystem _solutionContainerSystem = default!;
         [Dependency] private readonly InventorySystem _inventory = default!;
         [Dependency] private readonly ElectrocutionSystem _electrocution = default!;
 
@@ -109,6 +109,7 @@ namespace Content.Server.Explosion.EntitySystems
             SubscribeLocalEvent<SoundOnTriggerComponent, TriggerEvent>(OnSoundTrigger);
             SubscribeLocalEvent<ShockOnTriggerComponent, TriggerEvent>(HandleShockTrigger);
             SubscribeLocalEvent<RattleComponent, TriggerEvent>(HandleRattleTrigger);
+            SubscribeLocalEvent<AddCompOnTriggerComponent, TriggerEvent>(HandleAddCompTrigger);
         }
 
         private void OnSoundTrigger(EntityUid uid, SoundOnTriggerComponent component, TriggerEvent args)
@@ -202,6 +203,18 @@ namespace Content.Server.Explosion.EntitySystems
             args.Handled = true;
         }
 
+
+        private void HandleAddCompTrigger(Entity<AddCompOnTriggerComponent> ent, ref TriggerEvent args)
+        {
+            if (ent.Comp.ToSelf)
+                EntityManager.AddComponents(ent, ent.Comp.Components);
+
+            if (ent.Comp.ToOther && args.User is not null)
+                EntityManager.AddComponents(args.User.Value, ent.Comp.Components);
+
+            args.Handled = true;
+        }
+
         private void HandleRattleTrigger(EntityUid uid, RattleComponent component, TriggerEvent args)
         {
             if (!TryComp<SubdermalImplantComponent>(uid, out var implanted))
@@ -211,7 +224,7 @@ namespace Content.Server.Explosion.EntitySystems
                 return;
 
             // Gets location of the implant
-            var posText = FormattedMessage.RemoveMarkup(_navMap.GetNearestBeaconString(uid));
+            var posText = FormattedMessage.RemoveMarkupOrThrow(_navMap.GetNearestBeaconString(uid));
             var critMessage = Loc.GetString(component.CritMessage, ("user", implanted.ImplantedEntity.Value), ("position", posText));
             var deathMessage = Loc.GetString(component.DeathMessage, ("user", implanted.ImplantedEntity.Value), ("position", posText));
 
@@ -230,7 +243,7 @@ namespace Content.Server.Explosion.EntitySystems
         private void OnTriggerCollide(EntityUid uid, TriggerOnCollideComponent component, ref StartCollideEvent args)
         {
             if (args.OurFixtureId == component.FixtureID && (!component.IgnoreOtherNonHard || args.OtherFixture.Hard))
-                Trigger(uid);
+                Trigger(uid, args.OtherEntity);
         }
 
         private void OnSpawnTriggered(EntityUid uid, TriggerOnSpawnComponent component, MapInitEvent args)
@@ -330,7 +343,7 @@ namespace Content.Server.Explosion.EntitySystems
                         return;
 
                     _adminLogger.Add(LogType.Trigger,
-                        $"{ToPrettyString(user.Value):user} started a {delay} second timer trigger on entity {ToPrettyString(uid):timer}, which contains {SolutionContainerSystem.ToPrettyString(solutionA)} in one beaker and {SolutionContainerSystem.ToPrettyString(solutionB)} in the other.");
+                        $"{ToPrettyString(user.Value):user} started a {delay} second timer trigger on entity {ToPrettyString(uid):timer}, which contains {SharedSolutionContainerSystem.ToPrettyString(solutionA)} in one beaker and {SharedSolutionContainerSystem.ToPrettyString(solutionB)} in the other.");
                 }
                 else
                 {

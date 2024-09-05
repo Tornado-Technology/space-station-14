@@ -184,21 +184,21 @@ public sealed partial class AnomalyComponent : Component
     /// <summary>
     /// The minimum amount of research points generated per second
     /// </summary>
-    [DataField("minPointsPerSecond")]
+    [DataField]
     public int MinPointsPerSecond = 10;
 
     /// <summary>
     /// The maximum amount of research points generated per second
     /// This doesn't include the point bonus for being unstable.
     /// </summary>
-    [DataField("maxPointsPerSecond")]
+    [DataField]
     public int MaxPointsPerSecond = 70;
 
     /// <summary>
     /// The multiplier applied to the point value for the
     /// anomaly being above the <see cref="GrowthThreshold"/>
     /// </summary>
-    [DataField("growingPointMultiplier")]
+    [DataField]
     public float GrowingPointMultiplier = 1.5f;
     #endregion
 
@@ -252,10 +252,13 @@ public sealed partial class AnomalyComponent : Component
     /// </summary>
     [ViewVariables(VVAccess.ReadWrite)]
     [DataField("offset")]
-    public Vector2 FloatingOffset = new(0, 0.15f);
+    public Vector2 FloatingOffset = new(0, 0);
 
     public readonly string AnimationKey = "anomalyfloat";
     #endregion
+
+    [DataField]
+    public bool DeleteEntity = true;
 }
 
 /// <summary>

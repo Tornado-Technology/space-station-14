@@ -1,13 +1,10 @@
 using Content.Shared.Administration.Logs;
 using Content.Shared.Anomaly.Components;
 using Content.Shared.Anomaly.Prototypes;
-using Content.Shared.Damage;
 using Content.Shared.Database;
-using Content.Shared.Interaction;
 using Content.Shared.Physics;
 using Content.Shared.Popups;
 using Content.Shared.Weapons.Melee.Components;
-using Content.Shared.Weapons.Melee.Events;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Map;
 using Robust.Shared.Map.Components;
@@ -21,6 +18,7 @@ using Robust.Shared.Timing;
 using Robust.Shared.Utility;
 using System.Linq;
 using System.Numerics;
+using Content.Shared.Actions;
 
 namespace Content.Shared.Anomaly;
 
@@ -145,7 +143,7 @@ public abstract class SharedAnomalySystem : EntitySystem
         if (!Timing.IsFirstTimePredicted)
             return;
 
-        Audio.PlayPvs(component.SupercriticalSound, uid);
+        Audio.PlayPvs(component.SupercriticalSound, Transform(uid).Coordinates);
 
         if (_net.IsServer)
             Log.Info($"Raising supercritical event. Entity: {ToPrettyString(uid)}");
@@ -188,7 +186,8 @@ public abstract class SharedAnomalySystem : EntitySystem
 
         Spawn(supercritical ? component.CorePrototype : component.CoreInertPrototype, Transform(uid).Coordinates);
 
-        QueueDel(uid);
+        if (component.DeleteEntity)
+            QueueDel(uid);
     }
 
     /// <summary>
@@ -458,3 +457,5 @@ public partial record struct AnomalySpawnSettings()
     /// </summary>
     public bool SpawnOnSeverityChanged { get; set; } = false;
 }
+
+public sealed partial class ActionAnomalyPulseEvent : InstantActionEvent { }
